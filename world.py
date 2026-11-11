@@ -5,13 +5,17 @@ class Board:
         self.board = [[0] * 4 for _ in range(4)]
         self.score = 0
 
+
     def display_board(self):
         line = ''.join(['-'] * 21)
         print(line)
         for row in self.board:
             string = '|'
             for column in row:
-                string += "{num:4d}".format(num=column) + '|'
+                if column == 0:
+                    string += '    |'
+                else :
+                    string += "{num:4d}".format(num=column) + '|'
             print(string)
             print(line)
 
@@ -23,8 +27,8 @@ class Board:
                     empty.append((row,column))
         return empty
 
-    def spawn(self,empty):
-        r,c = random.choice(empty)
+    def spawn(self):
+        r,c = random.choice(self.get_empty())
         self.board[r][c] = random.choice([2] * 9 + [4])
 
     def move_left(self):
@@ -77,21 +81,68 @@ class Board:
         self.move_right()
         self.transpose()
 
+    def __eq__(self,other):
+        for row in range(len(self.board)):
+            for column in range(len(self.board)):
+                if self.board[row][column] != other.board[row][column]:
+                    return False
+        return True
+
+    def copy(self):
+        copy = Board()
+        for row in range(len(self.board)):
+            for column in range(len(self.board)):
+                copy.board[row][column] = self.board[row][column]
+        copy.score = self.score
+        return copy
+    
+    def legal(self):
+        legal_moves = []
+
+        copy = self.copy()
+        copy.move_left()
+        if self != copy:
+            legal_moves += ['left']
+
+        copy = self.copy()
+        copy.move_right()
+        if self != copy:
+            legal_moves += ['right']
+
+        copy = self.copy()
+        copy.move_up()
+        if self != copy:
+            legal_moves += ['up']
+
+        copy = self.copy()
+        copy.move_down()
+        if self != copy:
+            legal_moves += ['down']   
+
+        return legal_moves     
+
 if __name__ == '__main__':
     board = Board()
-    board.display_board()
-    while len(board.get_empty()) > 0:
-        empty = board.get_empty()
-        x = input()
-        if x == 'a' or x == 'A':  
-            board.move_left()
-        elif x == 'd' or x == 'D':
-            board.move_right()
-        elif x == 'w' or x == 'W':
-            board.move_up()
-        elif x == 's' or x == 'S':
-            board.move_down()
-        else:
-            continue
-        board.spawn(empty)
+    while True:
+        board.spawn()
         board.display_board()
+        legal_moves = board.legal()
+        if len(legal_moves) == 0:
+            print('Game Over')
+            break
+        valid = False
+        while not valid:
+            x = input()
+            if (x == 'a' or x == 'A') and 'left' in legal_moves:  
+                board.move_left()
+                valid = True
+            elif (x == 'd' or x == 'D') and 'right' in legal_moves:
+                board.move_right()
+                valid = True
+            elif (x == 'w' or x == 'W') and 'up' in legal_moves:
+                board.move_up()
+                valid = True
+            elif (x == 's' or x == 'S') and 'down' in legal_moves:
+                board.move_down()
+                valid = True
+        print('Score: %d' % board.score)
