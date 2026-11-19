@@ -1,30 +1,43 @@
 import random
 import time
 from world import Board
+from policy import Policy
 
-def generate(n,policy=None):
+def generate(n,policy,exploration_rate):
     f = open('rollouts.txt','w')
-    if policy is not None:
-        pass
-    else:
-        for i in range(n):
-            board = Board()
+    exploited = 0
+    explored = 0
+    counts = {'left':0,'right':0,'up':0,'down':0}
+    for i in range(n):
+        board = Board()
+        board.spawn()
+        mapping = {'left':board.move_left,'right':board.move_right,'up':board.move_up,'down':board.move_down}
+        length = 1
+        score = 0
+        record = ''
+        legal = board.legal()
+        while len(legal) > 0:
+            state = str(board)
+            expected_values = policy.expected_values(state)
+            exploit,*explore = [ev[0] for ev in expected_values if ev[0] in legal]
+            if len(explore) > 0 and random.random() < exploration_rate:
+                move = random.choice(explore)
+                explored += 1
+            else:
+                move = exploit
+                exploited += 1
+            counts[move] += 1
+            mapping[move]()
+            reward = board.score - score
+            record += ',' + state + ',' + move + ',' + str(reward)
+            score = board.score
+            length += 1
             board.spawn()
-            mapping = {'left':board.move_left,'right':board.move_right,'up':board.move_up,'down':board.move_down}
-            length = 1
-            score = 0
-            record = ''
-            while len(board.legal()) > 0:
-                move = random.choice(board.legal())
-                mapping[move]()
-                reward = board.score - score
-                record += ',' + str(board) + ',' + move + ',' + str(reward)
-                score = board.score
-                length += 1
-                board.spawn()
-            record = str(length) + ',' + str(score) + record + '\n'
-            f.write(record)
+            legal = board.legal()
+        record = str(length) + ',' + str(score) + record + '\n'
+        f.write(record)
     f.close()
+    return {'exploited':exploited,'explored':explored,'counts':counts}
 
 def play(index):
     f = open('rollouts.txt')
@@ -36,13 +49,13 @@ def play(index):
     while len(rollout) > 0:
         time.sleep(.5)
         state,action,reward,*rollout = rollout
-        print(action)
         board = Board(state)
         board.display_board()
+        print(action)
         score += int(reward)
         print('Score:',score)
 
 
 if __name__ == '__main__':
-    generate(3)
+    print(generate(3,Policy(),.5))
     play(0)
