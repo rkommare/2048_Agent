@@ -2,3 +2,5 @@ Dockerfile
 .dockerignore
 *.sh
 .git/
+.gitignore
+rollouts.txt

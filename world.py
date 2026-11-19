@@ -121,6 +121,9 @@ class Board:
 
         return legal_moves     
 
+    def __str__(self):
+        return '|'.join(['|'.join([str(n) for n in row]) for row in self.board])
+
 if __name__ == '__main__':
     board = Board()
     while True:
