@@ -1,4 +1,5 @@
 import random
+import time
 from world import Board
 
 def generate(n,policy=None):
@@ -25,5 +26,23 @@ def generate(n,policy=None):
             f.write(record)
     f.close()
 
+def play(index):
+    f = open('rollouts.txt')
+    record = f.readlines()[index].strip().split(',')
+    length, score, *rollout = record
+    print('Length:',length)
+    print('Final Score:',score)
+    score = 0
+    while len(rollout) > 0:
+        time.sleep(.5)
+        state,action,reward,*rollout = rollout
+        print(action)
+        board = Board(state)
+        board.display_board()
+        score += int(reward)
+        print('Score:',score)
+
+
 if __name__ == '__main__':
     generate(3)
+    play(0)

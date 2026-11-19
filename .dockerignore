@@ -4,3 +4,4 @@ Dockerfile
 .git/
 .gitignore
 rollouts.txt
+__pycache__/

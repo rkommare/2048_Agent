@@ -15,3 +15,5 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
+
+RUN rm requirements.txt

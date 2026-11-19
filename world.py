@@ -1,10 +1,17 @@
 import random
+import math
 
 class Board:
-    def __init__(self):
-        self.board = [[0] * 4 for _ in range(4)]
-        self.score = 0
-
+    def __init__(self,string=None,score=0):
+        if string is None:
+            self.board = [[0] * 4 for _ in range(4)]
+        else:
+            nums = string.split('|')
+            self.board = []
+            while len(nums) > 0:
+                c1,c2,c3,c4,*nums = nums
+                self.board += [[int(2**int(c1)),int(2**int(c2)),int(2**int(c3)),int(2**int(c4))]]
+        self.score = score
 
     def display_board(self):
         line = ''.join(['-'] * 21)
@@ -122,7 +129,7 @@ class Board:
         return legal_moves     
 
     def __str__(self):
-        return '|'.join(['|'.join([str(n) for n in row]) for row in self.board])
+        return '|'.join(['|'.join([str(int(math.log2(n))) if n > 0 else '-1' for n in row]) for row in self.board])
 
 if __name__ == '__main__':
     board = Board()
