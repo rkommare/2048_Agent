@@ -1,4 +1,5 @@
 import random
+from world import Board
 
 class Policy():
     def __init__(self):
@@ -13,9 +14,41 @@ class Policy():
     def load_cnn(self,filename):
         pass
 
+    def rotate_state(self,state):
+        rotations = []
+        rotate_map = {'left':'down','down':'right','right':'up','up':'left'}
+        board = Board(state)
+        directions = ['left','right','up','down']
+        for i in range(4):
+            board.rotate()
+            directions = list(map(lambda x:rotate_map[x],directions))
+            rotations.append((str(board),directions))
+        board = Board(state)
+        board.flip_horizontal()
+        directions = ['right','left','up','down']
+        for i in range(4):
+            board.rotate()
+            directions = list(map(lambda x:rotate_map[x],directions))
+            rotations.append((str(board),directions))
+        return rotations
+
+    def find(self,rotations):
+        for state,directions in rotations:
+            if state in self.table:
+                return state,self.table[state],directions
+        return None
+
     def expected_values(self,state):
         if self.table is None and self.cnn is None:
             values = [('left',0),('right',0),('up',0),('down',0)]
+        elif self.cnn is None:
+            rotations = self.rotate_state(state)
+            found = self.find(rotations)
+            if found is not None:
+                _, evs, directions = found
+                values = [(self.index_to_action[i],evs[self.action_to_index[d]])for i,d in enumerate(directions)]
+            else:
+                values = [('left',0),('right',0),('up',0),('down',0)]
         random.shuffle(values)
         values.sort(key=lambda x:x[1],reverse=True)
         return values

@@ -131,6 +131,14 @@ class Board:
     def __str__(self):
         return '|'.join(['|'.join([str(int(math.log2(n))) if n > 0 else '-1' for n in row]) for row in self.board])
 
+    def rotate(self):
+        rotated = [[0] * 4 for _ in range(4)]
+        for row in range(4):
+            for column in range(4):
+                rotated[3-column][row] = self.board[row][column]
+        self.board = rotated
+
+
 if __name__ == '__main__':
     board = Board()
     while True:
