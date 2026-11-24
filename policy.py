@@ -1,4 +1,5 @@
 import random
+import pickle
 from world import Board
 
 class Policy():
@@ -8,8 +9,13 @@ class Policy():
         self.index_to_action = {0:'left',1:'right',2:'up',3:'down'}
         self.action_to_index = {'left':0,'right':1,'up':2,'down':3}
 
+    def save_policy(self,filename):
+        with open(filename,'wb') as f:
+            pickle.dump(self.table,f)
+    
     def load_policy(self,filename):
-        pass
+        with open(filename,'rb') as f:
+            self.table = pickle.load(f)
 
     def load_cnn(self,filename):
         pass

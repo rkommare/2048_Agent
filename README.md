@@ -3,18 +3,18 @@
 ## Running Docker
 Run once to grant permissions
 ```bash
-> chmod +x buildrun.sh
-> chmod +x clear_docker.sh
+> chmod +x buildrun.bash
+> chmod +x clear_docker.bash
 ```
 
 Run to build and run container
 ```bash
-> sudo ./buildrun.sh
+> sudo ./buildrun.bash
 ```
 
 Run to delete image and container
 ```bash
-> sudo ./clear_docker.sh
+> sudo ./clear_docker.bash
 ```
 
 ## World
