@@ -73,5 +73,8 @@ The code for training the dictionary is in the train_policy.py file.
 
 Running train_policy.py directly trains a policy from scratch with 5000 iterations, 100 rollouts per iteration, an exploration rate of .4, an alpha of .3, and a discount factor of .9. Graphs average score and percent of states that are unseen in container_files/plot.png.
 
+## Testing Parameters
+The test_parameters.py file runs 1000 iterations of 100 rollouts with a discount factor of .9 for each combination of exploration rate and alpha ranging from 0 to .9 in intervals of .1. The graphs are saved to container_files/test_plots/exploration rate=\*,a=\*.png
+
 ## Problem with Monte Carlo
 As the figure in saved/plot.png shows, over 5000 iterations the average score does not increases. In addition, the percentage of unseen states is about 70% at the end. The percentage seems to be decaying exponentially, so an extremely high number of iterations would be necessary for most encountered states to have been seen before. This is likely why the average score is not increasing, as when most states are unseen, most decisions are random. In addition, if a state does not show up many times, the model does not accurately learn the expected values associated with that state. The number of iterations needed to solve this seems unfeasibly high.
