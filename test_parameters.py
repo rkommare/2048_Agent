@@ -7,7 +7,7 @@ for er in range(10):
         start = time.time()
         exploration_rate = er/10
         a = alpha/10
-        log = train_mc(5,100,exploration_rate,a,.9)
+        log = train_mc(1000,100,exploration_rate,a,.9)
         scores = []
         unseen = []
         for l in log:

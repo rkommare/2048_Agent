@@ -40,7 +40,7 @@ def train_mc(weight_iterations,n_per_iteration,exploration_rate,a,lam):
 
 if __name__ == '__main__':
     start = time.time()
-    log = train_mc(100,100,.4,.3,.9)
+    log = train_mc(5000,100,.4,.3,.9)
     scores = []
     unseen = []
     for l in log:
