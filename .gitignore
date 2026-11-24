@@ -1,2 +1,4 @@
 rollouts.txt
 __pycache__/
+**.pkl
+**.png
