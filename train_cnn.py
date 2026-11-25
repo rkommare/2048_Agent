@@ -7,9 +7,9 @@ import random
 
 def dataset(lam):
     f = open('rollouts.txt')
-    df = pandas.DataFrame(columns=['state','move','reward'])
     total_length = 0
     total_score = 0
+    data = []
     for line in f.readlines():
         future_reward = 0
         length,score,*rollout = line.strip().split(',')
@@ -19,16 +19,19 @@ def dataset(lam):
         while len(rollout) > 0:
             reward,action,state,*rollout = rollout
             future_reward = float(reward) + lam * future_reward
-            board = Board(state)
-            df = pandas.concat([df,pandas.DataFrame([[board.board,action,future_reward]],columns=df.columns)],ignore_index=True)
+            data += [[state,action,future_reward]]
+            #board = Board(state)
+            #data += [[board.board,action,future_reward]]
+    df = pandas.DataFrame(data,columns=['state','move','reward'])
+    f.close()
     return df
 
 def rotated_dataset(lam):
     policy = Policy()
     f = open('rollouts.txt')
-    df = pandas.DataFrame(columns=['state','move','reward'])
     total_length = 0
     total_score = 0
+    data = []
     for line in f.readlines():
         future_reward = 0
         length,score,*rollout = line.strip().split(',')
@@ -40,21 +43,18 @@ def rotated_dataset(lam):
             future_reward = float(reward) + lam * future_reward
             rotations = policy.rotate_state(state)
             state,directions = random.choice(rotations)
-            board = Board(state)
-            df = pandas.concat([df,pandas.DataFrame([[board.board,directions[policy.action_to_index[action]],future_reward]],columns=df.columns)],ignore_index=True)
+            data += [[state,directions[policy.action_to_index[action]],future_reward]]
+            #board = Board(state)
+            #data += [[board.board,directions[policy.action_to_index[action]],future_reward]]
+    df = pandas.DataFrame(data,columns=['state','move','reward'])
+    f.close()
     return df
 
 if __name__ == '__main__':
+    generate(500,Policy(),.4)
     start = time.time()
-    generate(3,Policy(),.4)
-    #df = dataset(.9)
-    df = rotated_dataset(.9)
-    for _,row in df.head().iterrows():
-        board = Board(row['state'])
-        print(row['move'])
-        board.display_board()
-    for _,row in df.tail().iterrows():
-        board = Board(row['state'])
-        print(row['move'])
-        board.display_board()
+    dataset(.9)
+    print('Time:',time.time()-start)
+    start = time.time()
+    rotated_dataset(.9)
     print('Time:',time.time()-start)
