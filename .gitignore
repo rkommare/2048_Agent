@@ -1,5 +1,5 @@
-rollouts.txt
-__pycache__/
+**/rollouts.txt
+**/__pycache__/
 **.pkl
 **.png
 !saved/**

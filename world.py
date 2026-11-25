@@ -2,15 +2,20 @@ import random
 import math
 
 class Board:
-    def __init__(self,string=None,score=0):
-        if string is None:
+    def __init__(self,state:str|list[list]=None,score=0):
+        if state is None:
             self.board = [[0] * 4 for _ in range(4)]
-        else:
-            nums = string.split('|')
+        elif isinstance(state,str):
+            nums = state.split('|')
             self.board = []
             while len(nums) > 0:
                 c1,c2,c3,c4,*nums = nums
                 self.board += [[int(2**int(c1)),int(2**int(c2)),int(2**int(c3)),int(2**int(c4))]]
+        else:
+            self.board = [[0] * 4 for _ in range(4)]
+            for row in range(4):
+                for column in range(4):
+                    self.board[row][column] = state[row][column]
         self.score = score
 
     def display_board(self):

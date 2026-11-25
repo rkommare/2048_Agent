@@ -3,6 +3,7 @@ from policy import Policy
 from world import Board
 import pandas
 import time
+import random
 
 def dataset(lam):
     f = open('rollouts.txt')
@@ -23,8 +24,9 @@ def dataset(lam):
     return df
 
 def rotated_dataset(lam):
+    policy = Policy()
     f = open('rollouts.txt')
-    df = pandas.DataFrame()
+    df = pandas.DataFrame(columns=['state','move','reward'])
     total_length = 0
     total_score = 0
     for line in f.readlines():
@@ -36,20 +38,23 @@ def rotated_dataset(lam):
         while len(rollout) > 0:
             reward,action,state,*rollout = rollout
             future_reward = float(reward) + lam * future_reward
+            rotations = policy.rotate_state(state)
+            state,directions = random.choice(rotations)
             board = Board(state)
-            df = pandas.concat([df,pandas.DataFrame([[board.board,action,future_reward]])],ignore_index=True)
+            df = pandas.concat([df,pandas.DataFrame([[board.board,directions[policy.action_to_index[action]],future_reward]],columns=df.columns)],ignore_index=True)
     return df
 
 if __name__ == '__main__':
     start = time.time()
     generate(3,Policy(),.4)
-    df = dataset(.9)
-    for row in df.head().iterrows():
+    #df = dataset(.9)
+    df = rotated_dataset(.9)
+    for _,row in df.head().iterrows():
         board = Board(row['state'])
-        board.display_board()
         print(row['move'])
-    for row in df.tail().iterrows():
+        board.display_board()
+    for _,row in df.tail().iterrows():
         board = Board(row['state'])
-        board.display_board()
         print(row['move'])
+        board.display_board()
     print('Time:',time.time()-start)
