@@ -1,6 +1,8 @@
 import random
 import pickle
+import torch
 from world import Board
+from cnn import CNN
 
 class Policy():
     def __init__(self):
@@ -17,8 +19,12 @@ class Policy():
         with open(filename,'rb') as f:
             self.table = pickle.load(f)
 
+    def save_cnn(self,filename):
+        torch.save(self.cnn.state_dict(),filename)
+
     def load_cnn(self,filename):
-        pass
+        self.cnn = CNN()
+        self.cnn.load_state_dict(torch.load(filename, weights_only=True))
 
     def rotate_state(self,state):
         rotations = []
@@ -55,6 +61,12 @@ class Policy():
                 values = [(self.index_to_action[i],evs[self.action_to_index[d]])for i,d in enumerate(directions)]
             else:
                 values = [('left',0),('right',0),('up',0),('down',0)]
+        else:
+            self.cnn.eval()
+            board = Board(state)
+            tensor = torch.tensor([board.board]).to(torch.float32)
+            evs = self.cnn(tensor)[0]
+            values = [(self.index_to_action[i],ev.item()) for i,ev in enumerate(evs)]
         random.shuffle(values)
         values.sort(key=lambda x:x[1],reverse=True)
         return values
