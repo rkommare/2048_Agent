@@ -59,24 +59,28 @@ Additional attributes that can be used to create rollouts or simulate future sta
 ## Policy
 The `Policy` object is defined in the `policy.py` file. It holds:
 - `table`: dictionary of states and expected values
-- `cnn`: CNN representation of a policy
+- `cnn`: Pytorch CNN representation of a policy
+- `device`: device for CNN. Defaults to CPU
+- `index_to_action`: dictionary that maps indices ranging from 0 to 3 to directions on the board
+- `action_to_index`: dictionary that maps directions on the board to list indices.
 
 These functions can be used to load or save a policy:
-- `save_policy(filename)`: saves dictionary to a pkl file
-- `load_policy(filename)`: loads dictionary from a pkl file
-- `save_cnn(filename)`: saves CNN
-- `load_cnn(filename)`: loads CNN
+- `save_policy(filename)`: saves dictionary to file
+- `load_policy(filename)`: loads dictionary from a file
+- `save_cnn(filename)`: saves CNN to file
+- `load_cnn(filename)`: loads CNN from file and puts it on GPU if available
 
 The functions used for training a dictionary are:
 - `rotate_state(state)`: takes in a string or list representation of a board and returns the string representations of every possible board state that is identical to the input except a rotation has been applied. Also returns the mapping of directions between the input state and the rotated states. This function is used to make sure effectively identical states are not considered different.
 - `find(rotations)`: Takes in the states and direction mappings exactly as outputted by `rotate_state`. Checks the policy's table for the states in rotations. If it finds one, it returns the matched state, the expected values, and the direction mapping. Otherwise, it returns `None`. 
 
 The function used for generating rollouts and testing is:
-- `expected_values(state)`: takes in a string representation of a board and returns the expected values of each move, sorted in descending order with ties being broken randomly. If the policy has no information about a move, the expected value is 0.
+- `expected_values(state)`: takes in a string representation of a board and returns the expected values of each move, sorted in descending order with ties being broken randomly. If the policy has no information about a move, the expected value is 0. If the policy is a CNN, state can also be an iterable of board states. The iterable must contain actual board states, not string representations. Inputting an iterable is much faster than calling expected_values multiple time when running the policy on GPU.
 
 ## Generating Data
 The generating code is in the `generate_runs.py` file. 
 - `generate(n,policy,exploration_rate)`: generates `n` rollouts using `policy` and `exploration_rate`. Each rollout is saved as a line in `rollouts.txt`. Each line starts with the number of turns in the rollout, then the final score, then the first state, then the first move selected, then the first reward, then the second state, etc. Everything is seperated by commas. The function returns the number of times exploitation was chosen, the number of times exploration was chosen, and the number of times each direction was chosen.
+- `generate_batches(batch_size,batches,policy,exploration_rate):` same as `generate`, but generates `batch_size` rollouts simultaneously. Generates `batch_size` * `batches` rollouts in total. Only works with a CNN policy, and is much faster than `generate` when running the policy on GPU.
 - `play(index)`: displays the record in `rollouts.txt` that corresponds with `index`. The record is replayed turn-by-turn in the terminal.
 
 Running `generate_runs.py` directly creates 100 rollouts with a blank policy and replays the first one.
@@ -90,7 +94,18 @@ Running `train_policy.py` directly trains a policy from scratch with 5000 iterat
 ## Testing Parameters
 The `test_parameters.py` file runs 1000 iterations of 100 rollouts with a discount factor of .9 for each combination of exploration rate and alpha ranging from 0 to .9 in intervals of .1. The graphs are saved to `container_files/test_plots/exploration rate=\*,a=\*.png`
 
+## CNN
+The `cnn.py` file defines the `CNN` class. The `CNN` class is a PyTorch `Module` with a variable number of convolution layers, followed by three linear layers of decreasing size. The convolution layers do not change the size of the input as the board is already 4 x 4, which is very small. The final layer outputs 4 values, which are the expected value of moving in the four directions.
+- `__init__(channels,conv_layers=3)`: creates the network with `channels` internal channels for the convolution layers. The model will have `max(1,conv_layers)` convolution layers.
+
 ## Training the CNN
+The code for training the CNN are in the `train_cnn.py` file. In order to preproccess data, use:
+- `dataset(lam,device='cpu')`: converts the data in the `rollouts.txt` file into a PyTorch `tensor` of states that can be input directly into the CNN and a targets `tensor` that holds the future reward associated with each state and action. `policy.action_to_index` is used to map a reward and action to a single vector. The other directions are `nan`. `lam` is the discount factor used to calculate future rewards. `dataset` also returns the total length and score of the rollouts.
+- `rotated_dataset(lam,device='cpu')`: the same as `dataset`, except the data is augmented with random rotation.
+- `loss_fn(output,target)`: a custom loss function that calculates mean square error while ignoring `nan`, effectively only calculating gradient for the action that was chosen.
+- `train_cnn(epochs,subepoch,batch_size,num_batches,exploration_rate,lr,lam,channels)`: Trains the CNN for `epochs` epochs, generating new rollouts every `subepoch` epochs. `batch_size`, `num_batches`, and `exploration_rate` are used to generate rollouts. `channels` is a hyperparameter for the CNN, `lr` is the learning rate, and `lam` is the discount factor. Saves the weights to `./container_files/cnn_weights.pth` and returns the average length, average score, and average loss of every epoch.
+
+Running `train_cnn.py` runs `train_cnn(100,10,500,1,.2,.05,.9,4)` and plots the average loss, score, and length. The graph is saved to `./container_files/cnn_plot.png`.
 
 ## Problem with Monte Carlo
 As the figure in `saved/plot.png` shows, over 5000 iterations the average score does not increases. In addition, the percentage of unseen states is about 70% at the end. The percentage seems to be decaying exponentially, so an extremely high number of iterations would be necessary for most encountered states to have been seen before. This is likely why the average score is not increasing, as when most states are unseen, most decisions are random. In addition, if a state does not show up many times, the model does not accurately learn the expected values associated with that state. The number of iterations needed to solve this seems unfeasibly high.

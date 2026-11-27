@@ -1,12 +1,19 @@
 import torch.nn as nn
-import torch
+import torch.nn.functional as f
 
 class CNN(nn.Module):
-    def __init__(self):
+    def __init__(self,channels,conv_layers=3):
         super().__init__()
-        self.temp = nn.Linear(16,4)
+        self.layers = nn.Sequential(nn.Conv2d(1,channels,3,padding='same'),nn.ReLU())
+        while len(self.layers) < conv_layers*3:
+            self.layers.append(nn.Conv2d(channels,channels,3,padding='same'))
+            self.layers.append(nn.ReLU())
+        self.layers.append(nn.Flatten())
+        self.layers.append(nn.Linear(channels*16,channels*4))
+        self.layers.append(nn.ReLU())
+        self.layers.append(nn.Linear(channels*4,channels))
+        self.layers.append(nn.ReLU())
+        self.layers.append(nn.Linear(channels,4))
 
     def forward(self,x):
-        x = torch.flatten(x,1)
-        x = self.temp(x)
-        return x
+        return self.layers(x)

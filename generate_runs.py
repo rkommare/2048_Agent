@@ -39,6 +39,53 @@ def generate(n,policy,exploration_rate):
     f.close()
     return {'exploited':total_exploited,'explored':total_explored,'counts':total_counts}
 
+def generate_batches(batch_size,batches,policy,exploration_rate):
+    total_exploited = 0
+    total_explored = 0
+    total_counts = {'left':0,'right':0,'up':0,'down':0}
+    mapping = {'left':lambda x: x.move_left(),'right':lambda x: x.move_right(),'up':lambda x: x.move_up(),'down':lambda x: x.move_down()}
+    f = open('rollouts.txt','w')
+    for b in range(batches):
+        current_states = [Board() for b in range(batch_size)]
+        lengths = [1] * batch_size
+        scores = [0] * batch_size
+        records = [''] * batch_size
+        legal = []
+        for state in current_states:
+            state.spawn()
+            legal += [state.legal()]
+        while True:
+            finished = set()
+            for i,state in enumerate(current_states):
+                if len(legal[i]) == 0:
+                    finished.add(i)
+                    record = str(lengths[i]) + ',' + str(scores[i]) + records[i] + '\n'
+                    f.write(record)
+            zipped = zip(current_states,lengths,scores,records,legal)
+            zipped = [t for i,t in enumerate(zipped) if i not in finished]
+            if(len(zipped) == 0):
+                break
+            current_states,lengths,scores,records,legal = [list(t) for t in zip(*zipped)]
+            expected_values = policy.expected_values(current_states)
+            for i,state in enumerate(current_states):
+                exploit,*explore = [ev[0] for ev in expected_values[i] if ev[0] in legal[i]]
+                if len(explore) > 0 and random.random() < exploration_rate:
+                    move = random.choice(explore)
+                    total_explored += 1
+                else:
+                    move = exploit
+                    total_exploited += 1
+                total_counts[move] += 1
+                mapping[move](state)
+                reward = state.score - scores[i]
+                records[i] += ',' + str(state) + ',' + move + ',' + str(reward)
+                scores[i] = state.score
+                lengths[i] += 1
+                state.spawn()
+                legal[i] = state.legal()
+    f.close()
+    return {'exploited':total_exploited,'explored':total_explored,'counts':total_counts}
+
 def play(index):
     f = open('rollouts.txt')
     record = f.readlines()[index].strip().split(',')
