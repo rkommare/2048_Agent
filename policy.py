@@ -25,9 +25,11 @@ class Policy():
         torch.save(self.cnn.state_dict(),filename)
 
     def load_cnn(self,filename):
-        self.cnn = CNN()
-        self.cnn.load_state_dict(torch.load(filename, weights_only=True))
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        weights = torch.load(filename, weights_only=True)
+        channels = weights['layers.0.weight'].shape[0]
+        self.cnn = CNN(channels)
+        self.cnn.load_state_dict(weights)
+        #self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.cnn.to(self.device)
 
     def set_device(self,device):

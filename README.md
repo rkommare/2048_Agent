@@ -68,11 +68,14 @@ These functions can be used to load or save a policy:
 - `save_policy(filename)`: saves dictionary to file
 - `load_policy(filename)`: loads dictionary from a file
 - `save_cnn(filename)`: saves CNN to file
-- `load_cnn(filename)`: loads CNN from file and puts it on GPU if available
+- `load_cnn(filename)`: loads CNN from file and puts it on `device`
 
 The functions used for training a dictionary are:
 - `rotate_state(state)`: takes in a string or list representation of a board and returns the string representations of every possible board state that is identical to the input except a rotation has been applied. Also returns the mapping of directions between the input state and the rotated states. This function is used to make sure effectively identical states are not considered different.
 - `find(rotations)`: Takes in the states and direction mappings exactly as outputted by `rotate_state`. Checks the policy's table for the states in rotations. If it finds one, it returns the matched state, the expected values, and the direction mapping. Otherwise, it returns `None`. 
+
+The functions used for CNN are:
+- `set_device(device)`: uses `device` for all CNN operations
 
 The function used for generating rollouts and testing is:
 - `expected_values(state)`: takes in a string representation of a board and returns the expected values of each move, sorted in descending order with ties being broken randomly. If the policy has no information about a move, the expected value is 0. If the policy is a CNN, state can also be an iterable of board states. The iterable must contain actual board states, not string representations. Inputting an iterable is much faster than calling expected_values multiple time when running the policy on GPU.
@@ -100,12 +103,12 @@ The `cnn.py` file defines the `CNN` class. The `CNN` class is a PyTorch `Module`
 
 ## Training the CNN
 The code for training the CNN are in the `train_cnn.py` file. In order to preproccess data, use:
-- `dataset(lam,device='cpu')`: converts the data in the `rollouts.txt` file into a PyTorch `tensor` of states that can be input directly into the CNN and a targets `tensor` that holds the future reward associated with each state and action. `policy.action_to_index` is used to map a reward and action to a single vector. The other directions are `nan`. `lam` is the discount factor used to calculate future rewards. `dataset` also returns the total length and score of the rollouts.
-- `rotated_dataset(lam,device='cpu')`: the same as `dataset`, except the data is augmented with random rotation.
+- `dataset(lam,device='cpu',validation_split=.2)`: converts the data in the `rollouts.txt` file into PyTorch tensors of states that can be input directly into the CNN and targets tensors that holds the future reward associated with each state and action. `policy.action_to_index` is used to map a reward and action to a single vector. The other directions are `nan`. `lam` is the discount factor used to calculate future rewards. `dataset` also returns the total length and score of the rollouts.
+- `rotated_dataset(lam,device='cpu',validation_split=.2)`: the same as `dataset`, except the data is augmented with random rotation.
 - `loss_fn(output,target)`: a custom loss function that calculates mean square error while ignoring `nan`, effectively only calculating gradient for the action that was chosen.
 - `train_cnn(epochs,subepoch,batch_size,num_batches,exploration_rate,lr,lam,channels)`: Trains the CNN for `epochs` epochs, generating new rollouts every `subepoch` epochs. `batch_size`, `num_batches`, and `exploration_rate` are used to generate rollouts. `channels` is a hyperparameter for the CNN, `lr` is the learning rate, and `lam` is the discount factor. Saves the weights to `./container_files/cnn_weights.pth` and returns the average length, average score, and average loss of every epoch.
 
-Running `train_cnn.py` runs `train_cnn(100,10,500,1,.2,.05,.9,4)` and plots the average loss, score, and length. The graph is saved to `./container_files/cnn_plot.png`.
+Running `train_cnn.py` runs `train_cnn(2500,500,1000,1,0,.001,.5,2)` and plots the average loss, score, and length. The graph is saved to `./container_files/cnn_plot.png`.
 
 ## Problem with Monte Carlo
 As the figure in `saved/plot.png` shows, over 5000 iterations the average score does not increases. In addition, the percentage of unseen states is about 70% at the end. The percentage seems to be decaying exponentially, so an extremely high number of iterations would be necessary for most encountered states to have been seen before. This is likely why the average score is not increasing, as when most states are unseen, most decisions are random. In addition, if a state does not show up many times, the model does not accurately learn the expected values associated with that state. The number of iterations needed to solve this seems unfeasibly high.

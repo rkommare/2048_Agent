@@ -76,9 +76,10 @@ def generate_batches(batch_size,batches,policy,exploration_rate):
                     move = exploit
                     total_exploited += 1
                 total_counts[move] += 1
+                state_str = str(state)
                 mapping[move](state)
                 reward = state.score - scores[i]
-                records[i] += ',' + str(state) + ',' + move + ',' + str(reward)
+                records[i] += ',' + state_str + ',' + move + ',' + str(reward)
                 scores[i] = state.score
                 lengths[i] += 1
                 state.spawn()
